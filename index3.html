@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
             min-height: 100vh;
             padding: 20px;
             display: flex;
@@ -36,7 +36,7 @@
         }
         
         .chat-container h2 {
-            color: #14b8a6;
+            color: #0f766e;
             margin-bottom: 20px;
             font-size: 1.8rem;
             text-align: center;
@@ -46,16 +46,23 @@
         #chatLandInfo {
             background: #f8f9fa;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 15px;
             border: 1px solid #e9ecef;
+            text-align: center;
         }
 
         #chatLandTitle {
             margin-bottom: 10px;
             color: #333;
             font-size: 1.2rem;
-            text-align: center;
+            font-weight: bold;
+        }
+        
+        #chatLandId {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
         }
 
         #chatLandInfo .price-info {
@@ -112,6 +119,7 @@
             padding: 15px;
             background: #ffffff;
             margin-bottom: 15px;
+            min-height: 250px;
         }
 
         #chatBidControls {
@@ -133,7 +141,7 @@
 
         .bid-buttons-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 8px;
             margin-bottom: 15px;
         }
@@ -225,17 +233,15 @@
     <div id="bidChatModal" class="chat-container">
         <h2>土地競價聊天室</h2>
         
-        <!-- Land Info Section -->
         <div id="chatLandInfo">
-            <h3 id="chatLandTitle"></h3>
+            <h3 id="chatLandTitle">載入中... <span id="chatLandId"></span></h3>
             <div class="price-info">
-                <span><strong>賣方定價:</strong> <span id="chatSellerPrice" style="color: #dc2626;"></span></span>
-                <span><strong>最高出價:</strong> <span id="chatHighestBid" style="color: #2563eb;"></span></span>
+                <span><strong>賣方定價:</strong> <span id="chatSellerPrice" style="color: #dc2626;">---</span></span>
+                <span><strong>最高出價:</strong> <span id="chatHighestBid" style="color: #2563eb;">---</span></span>
             </div>
             <div id="chatParticipantCount">0 人參與競價</div>
         </div>
 
-        <!-- User Entry Section -->
         <div id="userEntrySection">
             <div class="entry-group">
                 <label for="chatUserName" style="font-weight: bold; min-width: 60px;">您的名稱:</label>
@@ -244,14 +250,12 @@
             </div>
         </div>
 
-        <!-- Chat Messages Area -->
         <div id="chatMessages">
-            <div style="text-align: center; color: #666; font-style: italic;">
+            <div class="chat-message system">
                 正在載入土地資料...
             </div>
         </div>
 
-        <!-- Bid Controls (Hidden initially) -->
         <div id="chatBidControls" style="display: none;">
             <div class="your-bid-text">
                 <strong>您的目前提案: <span id="chatYourBid">0萬</span></strong>
@@ -314,7 +318,7 @@
                 buyerPrice = 0;
                 bidCount = 0;
             }
-            const title = `${region}${district}${titleFragments[Math.floor(Math.random() * titleFragments.length)]}${id}地號`;
+            const title = `${region}${district}${titleFragments[Math.floor(Math.random() * titleFragments.length)]}`;
             return { id, title, region, district, area: parseFloat(area), sellerPrice, buyerPrice, dealPrice, bidCount, status, pricePerPing: parseFloat(pricePerPing.toFixed(1)), lastUpdate };
         }
 
@@ -353,8 +357,8 @@
             chatMessages = [];
             currentChatUser = '';
             currentChatBidAmount = land.buyerPrice > 0 ? land.buyerPrice : Math.round(land.sellerPrice * 0.7);
-
-            document.getElementById('chatLandTitle').textContent = land.title;
+            
+            document.getElementById('chatLandTitle').innerHTML = `${land.title} <span id="chatLandId">(編號: ${land.id})</span>`;
             document.getElementById('chatSellerPrice').textContent = formatPrice(land.sellerPrice) + '萬';
             document.getElementById('chatHighestBid').textContent = (land.buyerPrice > 0 ? formatPrice(land.buyerPrice) + '萬' : '尚無出價');
             document.getElementById('chatParticipantCount').textContent = '0 人參與競價';
@@ -436,12 +440,12 @@
             let newAmount = currentChatBidAmount;
             const currentHighest = getCurrentHighestBid();
             switch (type) {
-                case 'plus': newAmount = (currentChatBidAmount > 0 ? currentChatBidAmount : currentHighest) + value; break;
+                case 'plus': newAmount = (currentHighest > 0 ? currentHighest : (land.sellerPrice * 0.7)) + value; break;
                 case 'highestPlusPercent': newAmount = Math.round(currentHighest * (1 + value / 100)); break;
                 case 'sellerMinusPercent': newAmount = Math.round(land.sellerPrice * (1 - value / 100)); break;
                 case 'matchSeller': newAmount = land.sellerPrice; break;
             }
-            currentChatBidAmount = Math.max(0, newAmount);
+            currentChatBidAmount = Math.round(Math.max(0, newAmount));
             updateChatBidDisplay();
         }
 
@@ -489,8 +493,9 @@
                     initializeChatUI(landId);
                 }, 100);
             } else {
-                document.getElementById('chatMessages').innerHTML = '<div class="chat-message system">請從主列表頁選擇一塊土地開始競價。</div>';
+                document.getElementById('chatMessages').innerHTML = '<div class="chat-message system">錯誤：未指定土地標的。<br>請從主列表頁選擇一塊土地開始競價。</div>';
                 document.getElementById('userEntrySection').style.display = 'none';
+                document.getElementById('chatLandInfo').style.display = 'none';
             }
         });
     </script>
